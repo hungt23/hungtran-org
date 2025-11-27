@@ -1,0 +1,17 @@
+.hero-full {
+  position: relative;
+  width: 100vw;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  overflow: hidden;
+}
+
+.hero-full img {
+  width: 100%;
+  height: clamp(220px, 35vh, 360px);
+  object-fit: cover;
+  display: block;
+}
+
