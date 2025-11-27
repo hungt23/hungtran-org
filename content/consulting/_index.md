@@ -5,9 +5,7 @@ title: "Consulting"
   <img src="/images/ocean_banner.jpeg" alt="Ocean banner" />
 </div>
 
-How I can help with data, climate, or workflow problems.
-
-Consult with small businesses and individuals to evaluate their environment impact and what they can do to change
+I can help with data, climate, or workflow problems.In the past I've,consulted with small businesses and individuals to evaluate their environment impact and what they can do to change
 
 ## What i've done
 - Walked individuals through what industries have a high environmental impact, what companies to avoid buying from, who is setting goals and meeting them, and what products have a long life cycle/can be repurposed.
