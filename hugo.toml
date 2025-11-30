@@ -16,6 +16,7 @@ theme = "PaperMod"
   showCodeCopyButtons = true
   disableSpecial1stPost = false
   disableScrollToTop = false
+  mainSections = ["blog"]
 
 [markup]
   [markup.goldmark]
