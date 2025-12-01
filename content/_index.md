@@ -11,19 +11,41 @@ title: "About"
 
 # Howdy!
 
+<div
+  style="
+    display:flex;
+    align-items:flex-start;
+    gap:1.5rem;
+    flex-wrap:wrap;
+  "
+>
+  <img
+    src="/images/profile.jpg"
+    alt="Hung Tran"
+    style="
+      max-width:180px;
+      border-radius:12px;
+      flex-shrink:0;
+    "
+  />
+  <div style="flex:1 1 220px;">
+    <p>Hi! Welcome to my personal hub for:</p>
+    <ul>
+      <li>A portfolio of projects (data, climate, community tools)</li>
+      <li>Writing and notes</li>
+      <li>A place to reach me and see what I’m working on now</li>
+    </ul>
+  </div>
+</div>
 
-![Hung](/images/profile.JPG)
 
-Hi! Welcome to my personal hub for: 
-- A portfolio of projects (data, climate, community tools)
-- Writing and notes
-- A place to reach me and see what I’m working on now
 
 My name is Hung Tran and I am a graduate of the MBA in sustainability program at Bard and a Product Manager at CDP. Before CDP and Bard, I studied Biology and Environmental Studies from Boston College (BC). My main interests lie in Sustainability, Coastal Communities, and Data Analysis. Coastal communities are among the first impacted by climate change so I hope to help out in any way that I can.  
 
 
 ## Current Work Experience
 Product Manager @ CDP 
+
 NYC
 Jul 2023 - Present
 
