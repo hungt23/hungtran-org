@@ -39,8 +39,6 @@ title: "About"
 </div>
 
 
-![Hung](/images/profile.jpg)
-
 My name is Hung Tran and I am a graduate of the MBA in sustainability program at Bard and a Product Manager at CDP. Before CDP and Bard, I studied Biology and Environmental Studies from Boston College (BC). My main interests lie in Sustainability, Coastal Communities, and Data Analysis. Coastal communities are among the first impacted by climate change so I hope to help out in any way that I can.  
 
 
