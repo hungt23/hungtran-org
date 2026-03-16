@@ -10,7 +10,7 @@
 
 .hero-full img {
   width: 100%;
-  height: clamp(220px, 35vh, 360px);
+  height: clamp(100px, 15vh, 200px);
   object-fit: cover;
   display: block;
 }
