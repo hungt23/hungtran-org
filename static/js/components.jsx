@@ -4,13 +4,11 @@ const { useState, useEffect } = React;
 // ===== Header =====
 function Header({ active, onNavigate }) {
   const links = [
-    { id: "intro", label: "Intro" },
-    { id: "projects", label: "Projects" },
-    { id: "resume", label: "Resume" },
-    { id: "consulting", label: "Consulting" },
-    { id: "writing", label: "Writing" },
-    { id: "reading", label: "Reading" },
-    { id: "contact", label: "Contact" },
+    { id: "intro",    label: "Intro",    scrollTo: "intro" },
+    { id: "projects", label: "Projects", scrollTo: "people" },
+    { id: "resume",   label: "Resume",   scrollTo: "resume" },
+    { id: "ideas",    label: "Ideas",    scrollTo: "writing" },
+    { id: "contact",  label: "Contact",  scrollTo: "contact" },
   ];
   return (
     <header className="site-header">
@@ -23,9 +21,9 @@ function Header({ active, onNavigate }) {
           {links.map((l) => (
             <a
               key={l.id}
-              href={`#${l.id}`}
+              href={`#${l.scrollTo}`}
               className={"nav-link" + (active === l.id ? " is-active" : "")}
-              onClick={(e) => { e.preventDefault(); onNavigate(l.id); }}
+              onClick={(e) => { e.preventDefault(); onNavigate(l.scrollTo); }}
             >
               {l.label}
             </a>
@@ -75,6 +73,93 @@ function Hero({ mode }) {
   );
 }
 
+// ===== Flood Map =====
+const FLOOD_LAYERS = [
+  { id: "current", label: "Current", color: "#2f74a7", file: null },
+  { id: "slr1m",   label: "+1m SLR",  color: "#d4a84b", file: "/data/nyc-slr-1m.geojson" },
+  { id: "slr25m",  label: "+2.5m SLR", color: "#d97a5f", file: "/data/nyc-slr-2.5m.geojson" },
+];
+
+function FloodMap() {
+  const mapRef = React.useRef(null);
+  const leafletMap = React.useRef(null);
+  const layerRefs = React.useRef({});
+  const [active, setActive] = useState(new Set(["current"]));
+  const [dataReady, setDataReady] = useState(false);
+
+  useEffect(() => {
+    if (leafletMap.current) return;
+    const map = L.map(mapRef.current, {
+      center: [40.7128, -74.006],
+      zoom: 11,
+      scrollWheelZoom: false,
+    });
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+      attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+      maxZoom: 18,
+    }).addTo(map);
+
+    // Current coastline outline — placeholder until GeoJSON loaded
+    layerRefs.current["current"] = L.circleMarker([40.7128, -74.006], {
+      radius: 0, color: "transparent",
+    }).addTo(map);
+
+    // SLR layers — load GeoJSON when available
+    FLOOD_LAYERS.filter(l => l.file).forEach(layer => {
+      fetch(layer.file)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (!data) return;
+          const gl = L.geoJSON(data, {
+            style: { color: layer.color, fillColor: layer.color, fillOpacity: 0.35, weight: 1, opacity: 0.7 },
+          });
+          layerRefs.current[layer.id] = gl;
+          if (active.has(layer.id)) gl.addTo(map);
+          setDataReady(true);
+        })
+        .catch(() => {});
+    });
+
+    leafletMap.current = map;
+  }, []);
+
+  const toggleLayer = (id) => {
+    setActive(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+        const gl = layerRefs.current[id];
+        if (gl && leafletMap.current) leafletMap.current.removeLayer(gl);
+      } else {
+        next.add(id);
+        const gl = layerRefs.current[id];
+        if (gl && leafletMap.current) gl.addTo(leafletMap.current);
+      }
+      return next;
+    });
+  };
+
+  return (
+    <div className="flood-map-wrap">
+      <div className="flood-map-controls">
+        {FLOOD_LAYERS.map(l => (
+          <button
+            key={l.id}
+            className={"flood-btn" + (active.has(l.id) ? " is-on" : "")}
+            style={{ "--layer-color": l.color }}
+            onClick={() => toggleLayer(l.id)}
+          >
+            <span className="flood-swatch" />
+            {l.label}
+          </button>
+        ))}
+        {!dataReady && <span className="flood-status">Drop GeoJSON files into static/data/ to enable SLR layers</span>}
+      </div>
+      <div ref={mapRef} className="flood-map" />
+    </div>
+  );
+}
+
 // ===== Section header =====
 function SectionHead({ title, meta }) {
   return (
@@ -96,6 +181,7 @@ function IntroSection() {
           <p className="lead">Hi! Welcome to my personal hub — portfolio, writing, and a place to reach me.</p>
           <p>My name is Hung Tran. I'm a graduate of the MBA in Sustainability program at Bard and currently a Product Manager at CDP. Before CDP and Bard, I studied Biology and Environmental Studies at Boston College.</p>
           <p>My main interests lie in <strong>sustainability</strong>, <strong>coastal communities</strong>, and <strong>data analysis</strong>. Coastal communities are among the first impacted by climate change, so I hope to help out in any way I can.</p>
+          <p className="intro-now"><span className="intro-now-label">Now →</span> Right now, I'm currently working on building my knowledge of ocean finance and building out my network.</p>
         </div>
       </div>
       <div className="quick-facts">
@@ -106,6 +192,29 @@ function IntroSection() {
           </div>
         ))}
       </div>
+    </section>
+  );
+}
+
+// ===== People & Orgs =====
+function PeopleOrgsSection() {
+  return (
+    <section data-section id="people" data-screen-label="People &amp; Orgs" className="section">
+      <SectionHead title="People &amp; Orgs Worth Knowing" meta="Recommended follows" />
+      {PEOPLE_ORGS.length === 0 ? (
+        <p className="empty-state">Recommendations coming soon.</p>
+      ) : (
+        <div className="people-grid">
+          {PEOPLE_ORGS.map((p) => (
+            <a className="person-card" key={p.name} href={p.url} target="_blank" rel="noreferrer">
+              <div className="person-name">{p.name}</div>
+              <div className="person-role">{p.role}</div>
+              <p className="person-why">{p.why}</p>
+              <span className="person-cta">Follow →</span>
+            </a>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -131,6 +240,7 @@ function ProjectCard({ project, isOpen, onToggle }) {
       <div className="project-expanded">
         <div className="project-expanded-inner">
           {project.body}
+          {project.slug === "flood-maps" && isOpen && <FloodMap />}
         </div>
       </div>
     </article>
@@ -139,11 +249,13 @@ function ProjectCard({ project, isOpen, onToggle }) {
 
 function ProjectsSection() {
   const [openSlug, setOpenSlug] = useState(null);
+  const active = PROJECTS_DATA.filter(p => p.active);
+  const past = PROJECTS_DATA.filter(p => !p.active && !p.cvOnly).sort((a, b) => (b.sortYear || 0) - (a.sortYear || 0));
   return (
     <section data-section id="projects" data-screen-label="Projects" className="section">
-      <SectionHead title="A Few Things I've Worked On or Am Exploring" meta={`${PROJECTS_DATA.length} projects`} />
+      <SectionHead title="Projects" />
       <div className="projects-grid">
-        {PROJECTS_DATA.map((p) => (
+        {active.map((p) => (
           <ProjectCard
             key={p.slug}
             project={p}
@@ -152,6 +264,25 @@ function ProjectsSection() {
           />
         ))}
       </div>
+      {past.length > 0 && (
+        <>
+          <div className="past-work-head">Past Work</div>
+          <div className="past-work-list">
+            {past.map((p) => (
+              <div className="past-work-item" key={p.slug}>
+                <span className="past-work-year">{p.year}</span>
+                <div className="past-work-body">
+                  <span className="past-work-title">{p.title}</span>
+                  <p className="past-work-lead">{p.lead}</p>
+                </div>
+                <div className="past-work-tags">
+                  {p.tags.map(t => <span className="tag" key={t}>{t}</span>)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </section>
   );
 }
@@ -228,6 +359,36 @@ function ResumeSection() {
 
         {isCV && (
           <div className="resume-section">
+            <div className="resume-section-label">Consulting</div>
+            <div className="resume-entry">
+              <div className="resume-date">Aug 2022 — May 2023</div>
+              <div>
+                <p className="resume-role">MBA Consultant — Climate Risks</p>
+                <p className="resume-org">Enterprise Community Partners</p>
+                <p className="resume-detail">Led development of a decarbonization and climate resiliency roadmap across a Mid-Atlantic real estate portfolio — risk assessment, property prioritization, retrofitting strategy, and financing options.</p>
+              </div>
+            </div>
+            <div className="resume-entry">
+              <div className="resume-date">Jun — Dec 2022</div>
+              <div>
+                <p className="resume-role">MBA Consultant</p>
+                <p className="resume-org">Oxfam</p>
+                <p className="resume-detail">Researched executive-to-worker compensation ratios across top global cacao companies to help Oxfam evaluate pay disparities and build the evidentiary case for fairer worker pay.</p>
+              </div>
+            </div>
+            <div className="resume-entry">
+              <div className="resume-date">Jan — May 2022</div>
+              <div>
+                <p className="resume-role">MBA Consultant</p>
+                <p className="resume-org">Oatly North America</p>
+                <p className="resume-detail">Benchmarked data visualizations across 10+ companies and built a sustainability KPI tracking tool for Oatly's North America team to monitor progress toward its 2029 targets.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isCV && (
+          <div className="resume-section">
             <div className="resume-section-label">Research &amp; Projects</div>
             <div className="resume-entry">
               <div className="resume-date">2020 — 2021</div>
@@ -248,6 +409,42 @@ function ResumeSection() {
               <div>
                 <p className="resume-role">Mine Rehabilitation Survey — Western Australia</p>
                 <p className="resume-detail">Conducted field survey measuring plant respiration rates and morphology across plots with different planting conditions at a mine rehabilitation site.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isCV && (
+          <div className="resume-section">
+            <div className="resume-section-label">Research Experience</div>
+            <div className="resume-entry">
+              <div className="resume-date">2016 — 2018</div>
+              <div>
+                <p className="resume-role">Undergraduate Research Fellow</p>
+                <p className="resume-org">Gail Kineke Oceanography & Coastal Processes Lab · Boston College</p>
+                <p className="resume-detail">Analyzed 200+ sediment samples using RO-TAP and sedigraph to map sediment deposition and river morphology in the Huang He River Delta and Connecticut River Estuary. Doubled lab throughput from 10 to 22 samples per week.</p>
+              </div>
+            </div>
+            <div className="resume-entry">
+              <div className="resume-date">Summer 2016</div>
+              <div>
+                <p className="resume-role">Summer Research Intern (concurrent)</p>
+                <p className="resume-org">Robinson Fulweiler Ocean Ecology & Bio-geochemistry Lab · Boston University <br/>Jonathan Grabowski Ecological Economics & Fisheries Lab · Northeastern University</p>
+                <p className="resume-detail">Collected and profiled gas production from 20 salt-marsh soil cores at BU; ran loss-on-ignition and C:N analysis. Concurrently maintained survivability of 120+ mussels and 80 juvenile lobsters for a predation and regeneration experiment at Northeastern's Nahant marine lab.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isCV && (
+          <div className="resume-section">
+            <div className="resume-section-label">Other Experience</div>
+            <div className="resume-entry">
+              <div className="resume-date">Aug 2016 — May 2019</div>
+              <div>
+                <p className="resume-role">Stacks, Courier &amp; Support Desks</p>
+                <p className="resume-org">Boston College Libraries</p>
+                <p className="resume-detail">Maintained shelves and retrieved materials across 5 floors; circulated books by cart between 6 locations (4 on-campus, 2 off-site); staffed support desks coordinating patron services and interdepartmental communication.</p>
               </div>
             </div>
           </div>
@@ -282,8 +479,12 @@ function ResumeSection() {
         </div>
 
         <div className="resume-actions">
-          <a href="#" className="btn btn-primary" onClick={(e) => { e.preventDefault(); window.print(); }}>
-            {isCV ? 'Print CV' : 'Print Resume'}
+          <a
+            href={isCV ? '/files/hung-tran-cv.pdf' : '/files/hung-tran-resume.pdf'}
+            download
+            className="btn btn-primary"
+          >
+            {isCV ? 'Download CV' : 'Download Resume'}
           </a>
         </div>
       </div>
@@ -370,6 +571,31 @@ function ReadingSection() {
   );
 }
 
+// ===== Data Finds =====
+function DataFindsSection() {
+  return (
+    <section data-section id="data" data-screen-label="Data Finds" className="section">
+      <SectionHead title="Interesting Data Finds" meta="Numbers worth knowing" />
+      {DATA_FINDS.length === 0 ? (
+        <p className="empty-state">Data finds coming soon.</p>
+      ) : (
+        <div className="data-finds-list">
+          {DATA_FINDS.map((d, i) => (
+            <div className="data-find" key={i}>
+              <div className="data-stat">{d.stat}</div>
+              <p className="data-context">{d.context}</p>
+              <div className="data-footer">
+                <a className="data-source" href={d.sourceUrl} target="_blank" rel="noreferrer">{d.source}</a>
+                <span className="data-date">{d.date}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 // ===== Contact =====
 function ContactSection() {
   return (
@@ -425,6 +651,18 @@ function useReveal() {
 }
 
 // ===== Active-section tracking =====
+const SECTION_TO_NAV = {
+  intro:      "intro",
+  people:     "projects",
+  projects:   "projects",
+  consulting: "projects",
+  data:       "projects",
+  resume:     "resume",
+  writing:    "ideas",
+  reading:    "ideas",
+  contact:    "contact",
+};
+
 function useActiveSection(setActive) {
   useEffect(() => {
     const sections = Array.from(document.querySelectorAll('[data-section]'));
@@ -434,7 +672,7 @@ function useActiveSection(setActive) {
       for (const s of sections) {
         if (s.offsetTop <= y) current = s.id;
       }
-      setActive(current);
+      setActive(SECTION_TO_NAV[current] || current);
     };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -442,13 +680,16 @@ function useActiveSection(setActive) {
   }, [setActive]);
 }
 
+window.FloodMap = FloodMap;
 window.Header = Header;
 window.Hero = Hero;
 window.IntroSection = IntroSection;
+window.PeopleOrgsSection = PeopleOrgsSection;
 window.ProjectsSection = ProjectsSection;
 window.ResumeSection = ResumeSection;
 window.ConsultingSection = ConsultingSection;
 window.WritingSection = WritingSection;
+window.DataFindsSection = DataFindsSection;
 window.ReadingSection = ReadingSection;
 window.ContactSection = ContactSection;
 window.Footer = Footer;

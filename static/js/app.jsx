@@ -90,10 +90,12 @@ function App() {
       <Header active={active} onNavigate={onNavigate} />
       <Hero mode={cfg.hero} />
       <IntroSection />
+      <PeopleOrgsSection />
       <ProjectsSection />
       <ResumeSection />
       <ConsultingSection />
       <WritingSection />
+      <DataFindsSection />
       <ReadingSection />
       <ContactSection />
       <Footer />
