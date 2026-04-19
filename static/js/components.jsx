@@ -1,11 +1,29 @@
 /* global React */
 const { useState, useEffect } = React;
 
+// ===== Theme icons =====
+function MoonIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="15" height="15" fill="none" aria-hidden="true">
+      <path d="M13.5 10.5A6 6 0 015.5 2.5a6 6 0 108 8z" fill="currentColor" />
+    </svg>
+  );
+}
+function SunIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="15" height="15" fill="none" aria-hidden="true">
+      <circle cx="8" cy="8" r="3" fill="currentColor" />
+      <path stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
+        d="M8 1v2M8 13v2M1 8h2M13 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M11.2 4.8l-1.4 1.4M4.8 11.2l-1.4 1.4" />
+    </svg>
+  );
+}
+
 // ===== Header =====
-function Header({ active, onNavigate }) {
+function Header({ active, onNavigate, darkMode, onToggleDark }) {
   const links = [
     { id: "intro",    label: "Intro",    scrollTo: "intro" },
-    { id: "projects", label: "Projects", scrollTo: "people" },
+    { id: "projects", label: "Projects", scrollTo: PEOPLE_ORGS.length > 0 ? "people" : "projects" },
     { id: "resume",   label: "Resume",   scrollTo: "resume" },
     { id: "ideas",    label: "Ideas",    scrollTo: "writing" },
     { id: "contact",  label: "Contact",  scrollTo: "contact" },
@@ -29,6 +47,9 @@ function Header({ active, onNavigate }) {
             </a>
           ))}
         </nav>
+        <button className="dark-toggle" onClick={onToggleDark} aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}>
+          {darkMode ? <SunIcon /> : <MoonIcon />}
+        </button>
       </div>
     </header>
   );
@@ -173,7 +194,7 @@ function SectionHead({ title, meta }) {
 // ===== Intro =====
 function IntroSection() {
   return (
-    <section data-section id="intro" data-screen-label="Intro" className="section section-prose">
+    <section data-section id="intro" data-screen-label="Intro" className="section">
       <SectionHead title="Howdy!" />
       <div className="intro-grid">
         <img className="profile-pic" src="/images/profile.jpg" alt="Hung Tran" />
@@ -220,6 +241,17 @@ function PeopleOrgsSection() {
 }
 
 // ===== Projects =====
+const TAG_COLORS = {
+  Ocean: 'ocean', Research: 'ocean', 'Field Work': 'ocean', GIS: 'ocean', Urban: 'ocean',
+  Climate: 'climate', Sustainability: 'climate',
+  Finance: 'finance', ESG: 'finance', Data: 'finance', 'Real Estate': 'finance',
+  Policy: 'policy',
+  Consulting: 'consulting', Operations: 'consulting', Service: 'consulting',
+  Web: 'product', Product: 'product', Interactive: 'product', Python: 'product', Civic: 'product',
+  Community: 'community', Food: 'community',
+};
+const tagCls = (t) => `tag tag-${TAG_COLORS[t] || 'default'}`;
+
 function ProjectCard({ project, isOpen, onToggle }) {
   return (
     <article className={"project-card" + (isOpen ? " is-open" : "")}>
@@ -232,7 +264,7 @@ function ProjectCard({ project, isOpen, onToggle }) {
         <p className="project-lead">{project.lead}</p>
         <div className="project-footer">
           <div className="project-tags">
-            {project.tags.map((t) => <span className="tag" key={t}>{t}</span>)}
+            {project.tags.map((t) => <span className={tagCls(t)} key={t}>{t}</span>)}
           </div>
           <span className="project-cta">{isOpen ? "Close −" : "Read more →"}</span>
         </div>
@@ -249,8 +281,10 @@ function ProjectCard({ project, isOpen, onToggle }) {
 
 function ProjectsSection() {
   const [openSlug, setOpenSlug] = useState(null);
+  const [showAll, setShowAll] = useState(false);
   const active = PROJECTS_DATA.filter(p => p.active);
   const past = PROJECTS_DATA.filter(p => !p.active && !p.cvOnly).sort((a, b) => (b.sortYear || 0) - (a.sortYear || 0));
+  const visiblePast = showAll ? past : past.slice(0, 3);
   return (
     <section data-section id="projects" data-screen-label="Projects" className="section">
       <SectionHead title="Projects" />
@@ -268,7 +302,7 @@ function ProjectsSection() {
         <>
           <div className="past-work-head">Past Work</div>
           <div className="past-work-list">
-            {past.map((p) => (
+            {visiblePast.map((p) => (
               <div className="past-work-item" key={p.slug}>
                 <span className="past-work-year">{p.year}</span>
                 <div className="past-work-body">
@@ -276,11 +310,16 @@ function ProjectsSection() {
                   <p className="past-work-lead">{p.lead}</p>
                 </div>
                 <div className="past-work-tags">
-                  {p.tags.map(t => <span className="tag" key={t}>{t}</span>)}
+                  {p.tags.map(t => <span className={tagCls(t)} key={t}>{t}</span>)}
                 </div>
               </div>
             ))}
           </div>
+          {past.length > 3 && (
+            <button className="past-work-toggle" onClick={() => setShowAll(s => !s)}>
+              {showAll ? "Show less ↑" : `Show ${past.length - 3} more ↓`}
+            </button>
+          )}
         </>
       )}
     </section>
@@ -551,11 +590,16 @@ function WritingSection() {
 
 // ===== Reading Reviews =====
 function ReadingSection() {
+  const [showAll, setShowAll] = useState(false);
+  const current = BOOKS.filter(b => b.status === "Currently reading" || b.status === "Re-reading");
+  const rest = BOOKS.filter(b => b.status !== "Currently reading" && b.status !== "Re-reading");
+  const visibleRest = showAll ? rest : rest.slice(0, 3);
+  const visible = [...current, ...visibleRest];
   return (
     <section data-section id="reading" data-screen-label="Reading" className="section">
       <SectionHead title="Reading Reviews" meta="Climate, Ocean, Fiction Adjacent" />
       <div className="reading-grid">
-        {BOOKS.map((b) => (
+        {visible.map((b) => (
           <div className="book-card" key={b.title}>
             <div className="book-head">
               <span className="book-rating">{b.rating}</span>
@@ -567,6 +611,11 @@ function ReadingSection() {
           </div>
         ))}
       </div>
+      {rest.length > 3 && (
+        <button className="past-work-toggle" onClick={() => setShowAll(s => !s)}>
+          {showAll ? "Show less ↑" : `Show ${rest.length - 3} more ↓`}
+        </button>
+      )}
     </section>
   );
 }
@@ -633,6 +682,123 @@ function Footer() {
   );
 }
 
+// ===== Submarine icon =====
+function SubIcon() {
+  return (
+    <svg viewBox="0 0 44 22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M15,9 L15,2 Q15,0 17,0 L27,0 Q29,0 29,2 L29,9 Z" fill="currentColor" />
+      <rect x="23" y="0" width="2.5" height="3" rx="1" fill="currentColor" />
+      <path d="M4,11 Q4,8 9,8 L38,8 Q43,8 43,11 Q43,14 38,14 L9,14 Q4,14 4,11 Z" fill="currentColor" />
+      <rect x="39" y="4" width="4" height="5" rx="2" fill="currentColor" opacity="0.65" />
+      <rect x="39" y="13" width="4" height="5" rx="2" fill="currentColor" opacity="0.65" />
+      <circle cx="25" cy="11" r="2.2" fill="white" opacity="0.35" />
+    </svg>
+  );
+}
+
+// ===== Depth Gauge =====
+const DEPTH_ZONES = [
+  { label: "Sunlit",   from: 0,    to: 200,  color: "#9dc9dd" },
+  { label: "Twilight", from: 200,  to: 1000, color: "#2f74a7" },
+  { label: "Midnight", from: 1000, to: 4000, color: "#0f3558" },
+  { label: "Abyssal",  from: 4000, to: 6000, color: "#05131f" },
+];
+const GAUGE_MAX = 6000;
+
+function DepthGauge() {
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    const update = () => {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      setProgress(max > 0 ? window.scrollY / max : 0);
+    };
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    return () => window.removeEventListener('scroll', update);
+  }, []);
+  const depth = Math.round(progress * GAUGE_MAX);
+  const zone = DEPTH_ZONES.find(z => depth >= z.from && depth < z.to) || DEPTH_ZONES[3];
+  return (
+    <div className="depth-gauge" aria-hidden="true">
+      <div className="dg-readout">
+        <span className="dg-num">{depth.toLocaleString()}</span>
+        <span className="dg-unit">m</span>
+      </div>
+      <div className="dg-zone-cur">{zone.label}</div>
+      <div className="dg-track-wrap">
+        <div className="dg-sub" style={{ top: `${progress * 100}%` }}>
+          <SubIcon />
+        </div>
+        <div className="dg-track">
+          {DEPTH_ZONES.map(z => (
+            <div key={z.label} className="dg-band" style={{
+              height: `${(z.to - z.from) / GAUGE_MAX * 100}%`,
+              background: z.color,
+            }} />
+          ))}
+        </div>
+        <div className="dg-labels">
+          {DEPTH_ZONES.map(z => (
+            <div key={z.label} className="dg-zone" style={{ top: `${z.from / GAUGE_MAX * 100}%` }}>
+              <span className="dg-tick" />
+              <span className="dg-name">{z.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ===== Section Dots =====
+const SECTION_NAV_DOTS = [
+  { id: "intro",      label: "Intro" },
+  ...(PEOPLE_ORGS.length > 0 ? [{ id: "people",     label: "People & Orgs" }] : []),
+  { id: "projects",   label: "Projects" },
+  { id: "resume",     label: "Resume" },
+  { id: "consulting", label: "Consulting" },
+  { id: "writing",    label: "Writing" },
+  ...(DATA_FINDS.length > 0  ? [{ id: "data",        label: "Data Finds" }]    : []),
+  { id: "reading",    label: "Reading" },
+  { id: "contact",    label: "Contact" },
+];
+
+function SectionDots() {
+  const [activeId, setActiveId] = useState('intro');
+  useEffect(() => {
+    const sections = Array.from(document.querySelectorAll('[data-section]'));
+    const update = () => {
+      const y = window.scrollY + 120;
+      let cur = sections[0]?.id || 'intro';
+      for (const s of sections) {
+        if (s.offsetTop <= y) cur = s.id;
+      }
+      setActiveId(cur);
+    };
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    return () => window.removeEventListener('scroll', update);
+  }, []);
+  const onClick = (id) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  return (
+    <nav className="section-dots" aria-label="Page sections">
+      {SECTION_NAV_DOTS.map(s => (
+        <button
+          key={s.id}
+          className={"sd-dot" + (activeId === s.id ? " is-active" : "")}
+          onClick={() => onClick(s.id)}
+          aria-label={`Go to ${s.label}`}
+        >
+          <span className="sd-label">{s.label}</span>
+        </button>
+      ))}
+    </nav>
+  );
+}
+
 // ===== Reveal on scroll =====
 function useReveal() {
   useEffect(() => {
@@ -680,6 +846,58 @@ function useActiveSection(setActive) {
   }, [setActive]);
 }
 
+// ===== Depth background shift =====
+function useDepthBackground() {
+  useEffect(() => {
+    const update = () => {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const p = max > 0 ? window.scrollY / max : 0;
+      let r, g, b;
+      if (isDark) {
+        // abyss #05131f → slightly lighter deep #0a1e30
+        r = Math.round(5  + (10 - 5)  * p);
+        g = Math.round(19 + (30 - 19) * p);
+        b = Math.round(31 + (48 - 31) * p);
+      } else {
+        // shore #f5f9fb → ocean tint #c8dfe8
+        r = Math.round(245 + (200 - 245) * p);
+        g = Math.round(249 + (223 - 249) * p);
+        b = Math.round(251 + (232 - 251) * p);
+      }
+      document.documentElement.style.setProperty('--bg', `rgb(${r},${g},${b})`);
+    };
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    const obs = new MutationObserver(update);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => {
+      window.removeEventListener('scroll', update);
+      obs.disconnect();
+      document.documentElement.style.removeProperty('--bg');
+    };
+  }, []);
+}
+
+// ===== Tide line (reading progress) =====
+function TideLine() {
+  const [pct, setPct] = useState(0);
+  useEffect(() => {
+    const update = () => {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      setPct(max > 0 ? (window.scrollY / max) * 100 : 0);
+    };
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    return () => window.removeEventListener('scroll', update);
+  }, []);
+  return <div className="tide-line" style={{ width: `${pct}%` }} aria-hidden="true" />;
+}
+
+window.DepthGauge = DepthGauge;
+window.SectionDots = SectionDots;
+window.TideLine = TideLine;
+window.useDepthBackground = useDepthBackground;
 window.FloodMap = FloodMap;
 window.Header = Header;
 window.Hero = Hero;

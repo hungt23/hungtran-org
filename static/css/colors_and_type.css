@@ -139,6 +139,7 @@
   --bg-elevated:   var(--midnight);
   --bg-subtle:     #0c1e30;
   --bg-inverse:    var(--shore);
+  --paper:         #0f2538;
   --fg:            var(--shore);
   --fg-muted:      var(--cloud);
   --fg-subtle:     var(--fog);
